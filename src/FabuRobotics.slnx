@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FabuRobotics.Contracts/FabuRobotics.Contracts.csproj" />
+  <Project Path="FabuRobotics.Shared/FabuRobotics.Shared.csproj" />
+</Solution>
