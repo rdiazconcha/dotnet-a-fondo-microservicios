@@ -1,34 +1,38 @@
+using FabuRobotics.Catalog.Api;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddDbContext<CatalogDbContext>(options =>
+{
+    options.UseSqlite(builder.Configuration.GetConnectionString("CatalogDb"));
+});
 
 var app = builder.Build();
 
-var products = new List<Product>
+await using (var scope = app.Services.CreateAsyncScope())
 {
-    new("FB-01", "Home assistant robot", "Service Robots", 11999m, 12),
-    new("FB-02", "Hospitality and customer service robot", "Service Robots", 12999m, 8),
-    new("FB-03", "All-terrain flagship robot", "Service Robots", 10999m, 20),
-    new("FB-BAT-16", "16-hour battery pack for FB-03", "Components", 499m, 150),
-    new("FB-DOCK", "Self-docking charging station", "Accessories", 299m, 75)
-};
+    var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
-app.MapGet("/api/catalog/products", (string? category) =>
+app.MapGet("/api/catalog/products", async (string? category, CatalogDbContext db) =>
 {
-    return category is null ? products : products.Where(p => p.Category == category);
+    return await db.Products.Where(p => category == null || p.Category == category).ToListAsync();
 });
 
-app.MapGet("/api/catalog/products/{sku}", (string sku) =>
+app.MapGet("/api/catalog/products/{sku}", async (string sku, CatalogDbContext db) =>
 {
-    return products.SingleOrDefault(p => p.Sku == sku) is { } product ? 
-        Results.Ok(product) : Results.NotFound();
+    return await db.Products.FindAsync(sku) is { } product ? Results.Ok(product) : Results.NotFound();
 });
     
+
 app.Run();
 
 public record Product(string Sku, string Name, string Category, decimal Price, int Stock);
