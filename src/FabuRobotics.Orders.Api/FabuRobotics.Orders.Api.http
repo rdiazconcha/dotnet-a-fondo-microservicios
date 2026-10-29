@@ -1,6 +1,20 @@
-@FabuRobotics.Orders.Api_HostAddress = http://localhost:5026
+@FabuRobotics.Orders.Api_HostAddress = http://localhost:5002
 
-GET {{FabuRobotics.Orders.Api_HostAddress}}/weatherforecast/
+POST {{FabuRobotics.Orders.Api_HostAddress}}/api/orders
 Accept: application/json
+Content-Type: application/json
 
+{
+  "customerId": "CUST-1001",
+  "lines": [
+    {
+      "sku": "PROD-001",
+      "quantity": 2
+    },
+    {
+      "sku": "PROD-002",
+      "quantity": 1
+    }
+  ]
+}
 ###
