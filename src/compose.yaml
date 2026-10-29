@@ -1,6 +1,20 @@
 name: faburobotics
 
 services:
+  catalog-api:
+    image: faburobotics/catalog-api
+    environment:
+      ConnectionStrings__CatalogDb: Data Source=/home/app/catalog.db
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://grafana:4317
+      OTEL_SERVICE_NAME: catalog-api
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
   grafana:
     image: grafana/otel-lgtm
     ports:
