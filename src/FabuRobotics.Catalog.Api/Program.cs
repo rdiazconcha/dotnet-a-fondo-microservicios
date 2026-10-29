@@ -1,13 +1,19 @@
 using FabuRobotics.Catalog.Api;
+using FabuRobotics.Shared;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("CatalogDb")!;
+
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<CatalogDbContext>(options =>
 {
-    options.UseSqlite(builder.Configuration.GetConnectionString("CatalogDb"));
+    options.UseSqlite(connectionString);
 });
+
+builder.AddDefaultHealthChecks()
+       .AddSqlite(connectionString, name: "catalog-db");
 
 var app = builder.Build();
 
@@ -31,7 +37,8 @@ app.MapGet("/api/catalog/products/{sku}", async (string sku, CatalogDbContext db
 {
     return await db.Products.FindAsync(sku) is { } product ? Results.Ok(product) : Results.NotFound();
 });
-    
+
+app.MapDefaultHealthEndpoints();
 
 app.Run();
 
