@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 
 namespace FabuRobotics.Orders.Api;
 
@@ -15,7 +17,10 @@ public static class OrderEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> PlaceOrder(PlaceOrderRequest request, OrdersDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult> PlaceOrder(PlaceOrderRequest request,
+                                                  CatalogClient catalog,
+                                                  OrdersDbContext db,
+                                                  CancellationToken cancellationToken)
     {
         if (request.Lines is not { Count: > 0 })
         {
@@ -29,9 +34,30 @@ public static class OrderEndpoints
         {
             Id = Guid.CreateVersion7(),
             CustomerId = request.CustomerId,
-            PlacedAt = DateTime.UtcNow,
-            Lines = request.Lines.Select(line => new OrderLine { Sku = line.Sku, Quantity = line.Quantity }).ToList()
+            PlacedAt = DateTime.UtcNow
         };
+
+        try
+        {
+            foreach (var line in request.Lines)
+            {
+                var product = await catalog.GetProductAsync(line.Sku, cancellationToken);
+
+                if (product is null)
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["lines"] = [$"Unknown SKU '{line.Sku}'."]
+                    });
+                }
+
+                order.Lines.Add(new OrderLine { Sku = line.Sku, Quantity = line.Quantity, UnitPrice = product.Price });
+            }
+        }
+        catch (Exception exception) when (exception is HttpRequestException or BrokenCircuitException or TimeoutRejectedException)
+        {
+            return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Catalog is not available.");
+        }
 
         db.Orders.Add(order);
         await db.SaveChangesAsync(cancellationToken);

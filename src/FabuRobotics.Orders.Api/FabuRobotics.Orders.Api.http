@@ -8,11 +8,11 @@ Content-Type: application/json
   "customerId": "CUST-1001",
   "lines": [
     {
-      "sku": "PROD-001",
-      "quantity": 2
+      "sku": "FB-01",
+      "quantity": 1
     },
     {
-      "sku": "PROD-002",
+      "sku": "FB-02",
       "quantity": 1
     }
   ]
