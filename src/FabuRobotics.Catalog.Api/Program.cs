@@ -15,6 +15,8 @@ builder.Services.AddDbContext<CatalogDbContext>(options =>
 builder.AddDefaultHealthChecks()
        .AddSqlite(connectionString, name: "catalog-db");
 
+builder.AddObservability();
+
 var app = builder.Build();
 
 await using (var scope = app.Services.CreateAsyncScope())
