@@ -22,7 +22,6 @@ public static class OrderEndpoints
     private static async Task<IResult> PlaceOrder(PlaceOrderRequest request,
                                                   CatalogClient catalog,
                                                   OrdersDbContext db,
-                                                  RabbitMqEventPublisher publisher,
                                                   CancellationToken cancellationToken)
     {
         if (request.Lines is not { Count: > 0 })
@@ -62,20 +61,22 @@ public static class OrderEndpoints
             return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Catalog is not available.");
         }
 
-        db.Orders.Add(order);
-        await db.SaveChangesAsync(cancellationToken);
-
         var orderPlaced = new OrderPlaced(
             order.Id,
             order.CustomerId,
             order.Lines.Select(line => new OrderPlacedLine(line.Sku, line.Quantity, line.UnitPrice)).ToList(),
             order.PlacedAt);
 
-        await publisher.PublishAsync(MessagingTopology.OrderPlacedRoutingKey,
-                                     nameof(OrderPlaced),
-                                     order.Id.ToString(),
-                                     JsonSerializer.Serialize(orderPlaced, JsonSerializerOptions.Web),
-                                     cancellationToken);
+        db.Orders.Add(order);
+        db.OutboxMessages.Add(new OutboxMessage
+        {
+            Id = order.Id,
+            Type = nameof(OrderPlaced),
+            Payload = JsonSerializer.Serialize(orderPlaced, JsonSerializerOptions.Web),
+            OccurredAt = order.PlacedAt
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/api/orders/{order.Id}", order);
     }

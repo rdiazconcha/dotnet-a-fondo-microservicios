@@ -30,6 +30,7 @@ await connection.DeclareTopologyAsync();
 
 builder.Services.AddSingleton(connection);
 builder.Services.AddSingleton<RabbitMqEventPublisher>();
+builder.Services.AddHostedService<OutboxPublisher>();
 
 builder.AddDefaultHealthChecks()
     .AddSqlite(connectionString, name: "orders-db")

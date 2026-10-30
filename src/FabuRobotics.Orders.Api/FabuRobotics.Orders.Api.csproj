@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>d0ae0da7-3963-4628-ae60-b094d2b0cff3</UserSecretsId>
+	<ContainerRepository>faburobotics/orders-api</ContainerRepository>
   </PropertyGroup>
 
 	<ItemGroup>
