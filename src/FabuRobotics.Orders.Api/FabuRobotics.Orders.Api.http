@@ -1,4 +1,4 @@
-@FabuRobotics.Orders.Api_HostAddress = http://localhost:5002
+@FabuRobotics.Orders.Api_HostAddress = http://localhost:8082
 
 POST {{FabuRobotics.Orders.Api_HostAddress}}/api/orders
 Accept: application/json
