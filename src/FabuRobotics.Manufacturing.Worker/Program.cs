@@ -1,18 +1,32 @@
 using FabuRobotics.Manufacturing.Worker;
 using FabuRobotics.Shared;
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("ManufacturingDb")!;
 
-builder.Services.AddDbContext<ManufacturingDbContext>(options =>
+builder.Services.AddDbContext<ManufacturingDbContext>(options => options.UseSqlite(connectionString));
+
+var rabbitMq = builder.Configuration.GetSection("RabbitMq");
+var connectionFactory = new ConnectionFactory
 {
-    options.UseSqlite(connectionString);
-});
+    HostName = rabbitMq["Host"]!,
+    Port = rabbitMq.GetValue("Port", 5672),
+    UserName = rabbitMq["Username"]!,
+    Password = rabbitMq["Password"]!
+};
+
+await using var connection = await connectionFactory.CreateConnectionAsync();
+await connection.DeclareTopologyAsync();
+
+builder.Services.AddSingleton(connection);
+builder.Services.AddHostedService<OrderPlacedConsumer>();
 
 builder.AddDefaultHealthChecks()
-       .AddSqlite(connectionString, name: "manufacturing-db");
+       .AddSqlite(connectionString, name: "manufacturing-db")
+       .AddRabbitMQ(name: "rabbitmq");
 
 builder.AddObservability();
 

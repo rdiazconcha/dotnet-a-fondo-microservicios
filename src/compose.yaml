@@ -37,6 +37,25 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  manufacturing-worker:
+    image: faburobotics/manufacturing-worker
+    environment:
+      ConnectionStrings__ManufacturingDb: Data Source=/home/app/manufacturing.db
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: faburobotics
+      RabbitMq__Password: faburobotics
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://grafana:4317
+      OTEL_SERVICE_NAME: manufacturing-worker
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
   
   rabbitmq:
     image: rabbitmq:4-management
