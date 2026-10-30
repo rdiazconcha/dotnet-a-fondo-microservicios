@@ -4,6 +4,7 @@
   </Folder>
   <Project Path="FabuRobotics.Catalog.Api/FabuRobotics.Catalog.Api.csproj" />
   <Project Path="FabuRobotics.Contracts/FabuRobotics.Contracts.csproj" />
+  <Project Path="FabuRobotics.Manufacturing.Worker/FabuRobotics.Manufacturing.Worker.csproj" />
   <Project Path="FabuRobotics.Orders.Api/FabuRobotics.Orders.Api.csproj" />
   <Project Path="FabuRobotics.Shared/FabuRobotics.Shared.csproj" />
 </Solution>
