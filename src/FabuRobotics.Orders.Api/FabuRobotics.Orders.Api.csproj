@@ -17,6 +17,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\FabuRobotics.Contracts\FabuRobotics.Contracts.csproj" />
 	  <ProjectReference Include="..\FabuRobotics.Shared\FabuRobotics.Shared.csproj" />
 	</ItemGroup>
 

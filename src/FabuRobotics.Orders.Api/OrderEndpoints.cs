@@ -1,6 +1,8 @@
+using FabuRobotics.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
+using System.Text.Json;
 
 namespace FabuRobotics.Orders.Api;
 
@@ -20,6 +22,7 @@ public static class OrderEndpoints
     private static async Task<IResult> PlaceOrder(PlaceOrderRequest request,
                                                   CatalogClient catalog,
                                                   OrdersDbContext db,
+                                                  RabbitMqEventPublisher publisher,
                                                   CancellationToken cancellationToken)
     {
         if (request.Lines is not { Count: > 0 })
@@ -61,6 +64,18 @@ public static class OrderEndpoints
 
         db.Orders.Add(order);
         await db.SaveChangesAsync(cancellationToken);
+
+        var orderPlaced = new OrderPlaced(
+            order.Id,
+            order.CustomerId,
+            order.Lines.Select(line => new OrderPlacedLine(line.Sku, line.Quantity, line.UnitPrice)).ToList(),
+            order.PlacedAt);
+
+        await publisher.PublishAsync(MessagingTopology.OrderPlacedRoutingKey,
+                                     nameof(OrderPlaced),
+                                     order.Id.ToString(),
+                                     JsonSerializer.Serialize(orderPlaced, JsonSerializerOptions.Web),
+                                     cancellationToken);
 
         return Results.Created($"/api/orders/{order.Id}", order);
     }
