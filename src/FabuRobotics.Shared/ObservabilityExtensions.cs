@@ -9,7 +9,7 @@ namespace FabuRobotics.Shared;
 
 public static class ObservabilityExtensions
 {
-    public static IHostApplicationBuilder AddObservability(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder AddObservability(this IHostApplicationBuilder builder, params string[] activitySourceNames)
     {
         builder.Logging.AddOpenTelemetry(logging =>
         {
@@ -23,10 +23,19 @@ public static class ObservabilityExtensions
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation())
             .WithTracing(tracing => tracing
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation())
+                .AddAspNetCoreInstrumentation(options =>
+                    options.Filter = context => !IsHealthEndpoint(context.Request.Path))
+                .AddHttpClientInstrumentation(options =>
+                    options.FilterHttpRequestMessage = request => !IsHealthEndpoint(request.RequestUri?.AbsolutePath))
+                .AddSource(activitySourceNames)
+                .SetSampler(new AlwaysOnSampler()))
             .UseOtlpExporter();
 
         return builder;
+    }
+
+    private static bool IsHealthEndpoint(string? path)
+    {
+        return path is "/health" or "/alive";
     }
 }

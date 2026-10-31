@@ -28,7 +28,7 @@ builder.AddDefaultHealthChecks()
        .AddSqlite(connectionString, name: "manufacturing-db")
        .AddRabbitMQ(name: "rabbitmq");
 
-builder.AddObservability();
+builder.AddObservability(RabbitMQActivitySource.SubscriberSourceName);
 
 var app = builder.Build();
 
